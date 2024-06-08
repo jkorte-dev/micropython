@@ -55,7 +55,7 @@ function ci_code_size_setup {
 function ci_code_size_build {
     # check the following ports for the change in their code size
     PORTS_TO_CHECK=bmusxpd
-    SUBMODULES="lib/asf4 lib/berkeley-db-1.xx lib/mbedtls lib/micropython-lib lib/nxp_driver lib/pico-sdk lib/stm32lib lib/tinyusb"
+    SUBMODULES="lib/asf4 lib/berkeley-db-1.xx lib/btstack lib/cyw43-driver lib/lwip lib/mbedtls lib/micropython-lib lib/nxp_driver lib/pico-sdk lib/stm32lib lib/tinyusb"
 
     # starts off at either the ref/pull/N/merge FETCH_HEAD, or the current branch HEAD
     git checkout -b pull_request # save the current location
@@ -178,18 +178,19 @@ function ci_esp8266_build {
 # ports/webassembly
 
 function ci_webassembly_setup {
+    npm install terser
     git clone https://github.com/emscripten-core/emsdk.git
     (cd emsdk && ./emsdk install latest && ./emsdk activate latest)
 }
 
 function ci_webassembly_build {
     source emsdk/emsdk_env.sh
-    make ${MAKEOPTS} -C ports/webassembly
+    make ${MAKEOPTS} -C ports/webassembly VARIANT=pyscript submodules
+    make ${MAKEOPTS} -C ports/webassembly VARIANT=pyscript
 }
 
 function ci_webassembly_run_tests {
-    # This port is very slow at running, so only run a few of the tests.
-    (cd tests && MICROPY_MICROPYTHON=../ports/webassembly/node_run.sh ./run-tests.py -j1 basics/builtin_*.py)
+    make -C ports/webassembly VARIANT=pyscript test_min
 }
 
 ########################################################################################
@@ -516,7 +517,7 @@ function ci_unix_coverage_run_mpy_merge_tests {
 
 function ci_unix_coverage_run_native_mpy_tests {
     MICROPYPATH=examples/natmod/features2 ./ports/unix/build-coverage/micropython -m features2
-    (cd tests && ./run-natmodtests.py "$@" extmod/{btree*,deflate*,framebuf*,heapq*,random*,re*}.py)
+    (cd tests && ./run-natmodtests.py "$@" extmod/*.py)
 }
 
 function ci_unix_32bit_setup {

@@ -3,7 +3,7 @@
  *
  * The MIT License (MIT)
  *
- * Copyright (c) 2022 Ibrahim Abdelkader <iabdalkader@openmv.io>
+ * Copyright (c) 2023 Damien P. George
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -24,37 +24,28 @@
  * THE SOFTWARE.
  */
 
-#include "py/runtime.h"
-#include "py/mphal.h"
-#include "extmod/modmachine.h"
+#include "py/obj.h"
+#include "shared/timeutils/timeutils.h"
+#include "library.h"
 
-#if MICROPY_HW_USB_CDC_1200BPS_TOUCH && MICROPY_HW_ENABLE_USBDEV
-
-#include "tusb.h"
-
-static mp_sched_node_t mp_bootloader_sched_node;
-
-static void usbd_cdc_run_bootloader_task(mp_sched_node_t *node) {
-    mp_hal_delay_ms(250);
-    machine_bootloader(0, NULL);
+// Return the localtime as an 8-tuple.
+static mp_obj_t mp_time_localtime_get(void) {
+    timeutils_struct_time_t tm;
+    timeutils_seconds_since_epoch_to_struct_time(mp_hal_time_ms() / 1000, &tm);
+    mp_obj_t tuple[8] = {
+        mp_obj_new_int(tm.tm_year),
+        mp_obj_new_int(tm.tm_mon),
+        mp_obj_new_int(tm.tm_mday),
+        mp_obj_new_int(tm.tm_hour),
+        mp_obj_new_int(tm.tm_min),
+        mp_obj_new_int(tm.tm_sec),
+        mp_obj_new_int(tm.tm_wday),
+        mp_obj_new_int(tm.tm_yday),
+    };
+    return mp_obj_new_tuple(8, tuple);
 }
 
-void
-#if MICROPY_HW_USB_EXTERNAL_TINYUSB
-mp_usbd_line_state_cb
-#else
-tud_cdc_line_state_cb
-#endif
-    (uint8_t itf, bool dtr, bool rts) {
-    if (dtr == false && rts == false) {
-        // Device is disconnected.
-        cdc_line_coding_t line_coding;
-        tud_cdc_n_get_line_coding(itf, &line_coding);
-        if (line_coding.bit_rate == 1200) {
-            // Delay bootloader jump to allow the USB stack to service endpoints.
-            mp_sched_schedule_node(&mp_bootloader_sched_node, usbd_cdc_run_bootloader_task);
-        }
-    }
+// Returns the number of seconds, as a float, since the Epoch.
+static mp_obj_t mp_time_time_get(void) {
+    return mp_obj_new_float((mp_float_t)mp_hal_time_ms() / 1000);
 }
-
-#endif

@@ -30,7 +30,7 @@
 // as well as a fallback to generate MICROPY_GIT_TAG if the git repo or tags
 // are unavailable.
 #define MICROPY_VERSION_MAJOR 1
-#define MICROPY_VERSION_MINOR 23
+#define MICROPY_VERSION_MINOR 24
 #define MICROPY_VERSION_MICRO 0
 #define MICROPY_VERSION_PRERELEASE 1
 
@@ -446,6 +446,11 @@
 #define MICROPY_DYNAMIC_COMPILER (0)
 #endif
 
+// Whether the compiler allows compiling top-level await expressions
+#ifndef MICROPY_COMP_ALLOW_TOP_LEVEL_AWAIT
+#define MICROPY_COMP_ALLOW_TOP_LEVEL_AWAIT (0)
+#endif
+
 // Whether to enable constant folding; eg 1+2 rewritten as 3
 #ifndef MICROPY_COMP_CONST_FOLDING
 #define MICROPY_COMP_CONST_FOLDING (MICROPY_CONFIG_ROM_LEVEL_AT_LEAST_CORE_FEATURES)
@@ -581,6 +586,12 @@
 
 /*****************************************************************************/
 /* Python internal features                                                  */
+
+// Use a special long jump in nlrthumb.c, which may be necessary if nlr.o and
+// nlrthumb.o are linked far apart from each other.
+#ifndef MICROPY_NLR_THUMB_USE_LONG_JUMP
+#define MICROPY_NLR_THUMB_USE_LONG_JUMP (0)
+#endif
 
 // Whether to enable import of external modules
 // When disabled, only importing of built-in modules is supported

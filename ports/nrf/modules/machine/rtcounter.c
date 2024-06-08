@@ -27,6 +27,7 @@
 
 #include "py/nlr.h"
 #include "py/runtime.h"
+#include "mphalport.h"
 #include "rtcounter.h"
 #include "nrfx_rtc.h"
 #include "nrf_clock.h"
@@ -49,10 +50,10 @@ typedef struct {
 
 // Non-volatile part of the RTCounter object.
 typedef struct _machine_rtc_obj_t {
-    mp_obj_base_t          base;
-    const nrfx_rtc_t     * p_rtc;   // Driver instance
-    nrfx_rtc_handler_t     handler; // interrupt callback
-    machine_rtc_config_t * config;  // pointer to volatile part
+    mp_obj_base_t base;
+    const nrfx_rtc_t *p_rtc;        // Driver instance
+    nrfx_rtc_handler_t handler;     // interrupt callback
+    machine_rtc_config_t *config;   // pointer to volatile part
 } machine_rtc_obj_t;
 
 static const nrfx_rtc_t machine_rtc_instances[] = {
@@ -76,15 +77,15 @@ static void interrupt_handler2(nrfx_rtc_int_type_t int_type);
 #endif
 
 static const machine_rtc_obj_t machine_rtc_obj[] = {
-    {{&machine_rtcounter_type}, .p_rtc = &machine_rtc_instances[0], .handler=interrupt_handler0, .config=&configs[0]},
-    {{&machine_rtcounter_type}, .p_rtc = &machine_rtc_instances[1], .handler=interrupt_handler1, .config=&configs[1]},
-#if defined(NRF52_SERIES)
-    {{&machine_rtcounter_type}, .p_rtc = &machine_rtc_instances[2], .handler=interrupt_handler2, .config=&configs[2]},
-#endif
+    {{&machine_rtcounter_type}, .p_rtc = &machine_rtc_instances[0], .handler = interrupt_handler0, .config = &configs[0]},
+    {{&machine_rtcounter_type}, .p_rtc = &machine_rtc_instances[1], .handler = interrupt_handler1, .config = &configs[1]},
+    #if defined(NRF52_SERIES)
+    {{&machine_rtcounter_type}, .p_rtc = &machine_rtc_instances[2], .handler = interrupt_handler2, .config = &configs[2]},
+    #endif
 };
 
 static void interrupt_handler(size_t instance_id) {
-    const machine_rtc_obj_t * self = &machine_rtc_obj[instance_id];
+    const machine_rtc_obj_t *self = &machine_rtc_obj[instance_id];
     machine_rtc_config_t *config = self->config;
     if (config->callback != NULL) {
         mp_call_function_1((mp_obj_t)config->callback, (mp_obj_t)self);
@@ -132,8 +133,8 @@ static void rtc_print(const mp_print_t *print, mp_obj_t self_in, mp_print_kind_t
 /* MicroPython bindings for machine API                                       */
 
 const nrfx_rtc_config_t machine_rtc_config = {
-    .prescaler    = RTC_FREQ_TO_PRESCALER(RTC_FREQUENCY),
-    .reliable     = 0,
+    .prescaler = RTC_FREQ_TO_PRESCALER(RTC_FREQUENCY),
+    .reliable = 0,
     .tick_latency = 0, // ignored when reliable == 0
     #ifdef NRF51
     .interrupt_priority = 3,
@@ -165,7 +166,7 @@ static mp_obj_t machine_rtc_make_new(const mp_obj_type_t *type, size_t n_args, s
     #endif
 
     // const and non-const part of the RTC object.
-    const machine_rtc_obj_t * self = &machine_rtc_obj[rtc_id];
+    const machine_rtc_obj_t *self = &machine_rtc_obj[rtc_id];
     machine_rtc_config_t *config = self->config;
 
     if (args[ARG_callback].u_obj == mp_const_none) {
@@ -186,9 +187,7 @@ static mp_obj_t machine_rtc_make_new(const mp_obj_type_t *type, size_t n_args, s
     }
 
     // Start the low-frequency clock (if it hasn't been started already)
-    if (!nrf_clock_lf_is_running(NRF_CLOCK)) {
-        nrf_clock_task_trigger(NRF_CLOCK, NRF_CLOCK_TASK_LFCLKSTART);
-    }
+    mp_nrf_start_lfclk();
 
     // Make sure it's uninitialized.
     nrfx_rtc_uninit(self->p_rtc);
@@ -206,7 +205,7 @@ static mp_obj_t machine_rtc_make_new(const mp_obj_type_t *type, size_t n_args, s
 /// in the configured frequency has been reached.
 ///
 static mp_obj_t machine_rtc_start(mp_obj_t self_in) {
-    machine_rtc_obj_t * self = MP_OBJ_TO_PTR(self_in);
+    machine_rtc_obj_t *self = MP_OBJ_TO_PTR(self_in);
 
     nrfx_rtc_enable(self->p_rtc);
 
@@ -218,7 +217,7 @@ static MP_DEFINE_CONST_FUN_OBJ_1(machine_rtc_start_obj, machine_rtc_start);
 /// Stop the RTCounter.
 ///
 static mp_obj_t machine_rtc_stop(mp_obj_t self_in) {
-    machine_rtc_obj_t * self = MP_OBJ_TO_PTR(self_in);
+    machine_rtc_obj_t *self = MP_OBJ_TO_PTR(self_in);
 
     nrfx_rtc_disable(self->p_rtc);
 
@@ -231,7 +230,7 @@ static MP_DEFINE_CONST_FUN_OBJ_1(machine_rtc_stop_obj, machine_rtc_stop);
 /// with the current prescaler (2^24 / 8 = 2097152 seconds).
 ///
 static mp_obj_t machine_rtc_counter(mp_obj_t self_in) {
-    machine_rtc_obj_t * self = MP_OBJ_TO_PTR(self_in);
+    machine_rtc_obj_t *self = MP_OBJ_TO_PTR(self_in);
 
     uint32_t counter = nrfx_rtc_counter_get(self->p_rtc);
 
@@ -243,7 +242,7 @@ static MP_DEFINE_CONST_FUN_OBJ_1(machine_rtc_counter_obj, machine_rtc_counter);
 /// Free resources associated with this RTC.
 ///
 static mp_obj_t machine_rtc_deinit(mp_obj_t self_in) {
-    machine_rtc_obj_t * self = MP_OBJ_TO_PTR(self_in);
+    machine_rtc_obj_t *self = MP_OBJ_TO_PTR(self_in);
 
     nrfx_rtc_uninit(self->p_rtc);
 
