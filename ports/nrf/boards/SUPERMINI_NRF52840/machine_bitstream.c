@@ -58,10 +58,10 @@ uint32_t mp_hal_delay_ns_calc(uint32_t ns, bool high) {
 */
 
 // STM32F091 @ 48MHz
-#define NS_CYCLES_PER_ITER_HIGH (4) // 6 => 8 oder 9
-#define NS_CYCLES_PER_ITER_LOW (4) // 6 => 8 oder 9
-#define NS_OVERHEAD_CYCLES_HIGH (14) //12
-#define NS_OVERHEAD_CYCLES_LOW (12) //18 => 15 oder 12?
+#define NS_CYCLES_PER_ITER_HIGH (4)  // 6 => 4   //256
+#define NS_CYCLES_PER_ITER_LOW (4)   // 6 => 4   //256
+#define NS_OVERHEAD_CYCLES_HIGH (14) // 12 => 14 //218
+#define NS_OVERHEAD_CYCLES_LOW (12)  // 18 => 12 //188
 
 uint32_t mp_hal_delay_ns_calc(uint32_t ns, bool high) {
     uint32_t ncycles = 64 * ns / 1000;

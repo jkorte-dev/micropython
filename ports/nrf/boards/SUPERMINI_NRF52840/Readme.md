@@ -15,3 +15,6 @@ cp build-SUPERMINI_NRF52840/firmware.uf2 /Volumes/NICENANO/
 
 see also
 https://github.com/micropython/micropython/pull/8318
+
+to enable RTC another pr is needed 
+https://github.com/micropython/micropython/pull/14198
