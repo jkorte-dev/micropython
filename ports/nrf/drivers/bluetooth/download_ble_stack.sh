@@ -48,7 +48,8 @@ function download_s140_nrf52_6_1_1
 
     mkdir -p $1/s140_nrf52_6.1.1
     cd $1/s140_nrf52_6.1.1
-    wget --post-data="fileName=DeviceDownload&ids=CE89BA7633C540AFA48AB88E934DBF05" https://www.nordicsemi.com/api/sitecore/Products/MedialibraryZipDownload2
+    #wget --post-data="fileName=DeviceDownload&ids=CE89BA7633C540AFA48AB88E934DBF05" https://www.nordicsemi.com/api/sitecore/Products/MedialibraryZipDownload2
+    curl -d "fileName=DeviceDownload&ids=CE89BA7633C540AFA48AB88E934DBF05" https://www.nordicsemi.com/api/sitecore/Products/MedialibraryZipDownload2 -o MedialibraryZipDownload2
     mv MedialibraryZipDownload2 temp.zip
     unzip -u temp.zip
     unzip -u s140nrf52611.zip
@@ -78,13 +79,13 @@ function download_s140_nrf52_7_3_0
 
 SCRIPT_DIR="$(cd -P "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
-if [ $# -eq 0 ]; then
+if [ $# -eq 0 ]; then 
     echo "No Bluetooth LE stack defined, downloading all."
     download_s110_nrf51_8_0_0 ${SCRIPT_DIR}
     download_s132_nrf52_6_1_1 ${SCRIPT_DIR}
     download_s140_nrf52_6_1_1 ${SCRIPT_DIR}
     download_s140_nrf52_7_3_0 ${SCRIPT_DIR}
-else
+else 
     case $1 in
         "s110_nrf51" )
             download_s110_nrf51_8_0_0 ${SCRIPT_DIR} ;;
